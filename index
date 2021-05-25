@@ -1,0 +1,79 @@
+✳️Create High Availability Architecture with AWS CLI
+✳️The architecture includes-
+⭕ Webserver configured on EC2 Instance
+⭕Document Root(/var/www/html) made persistent by mounting on EBS Block Device.
+⭕Static objects used in code such as pictures stored in S3
+⭕Setting up Content Delivery Network using CloudFront and using the origin domain as S3 bucket.
+⭕Finally place the Cloud Front URL on the webapp code for security and low latency.
+
+1. First we need to create an instance using aws cli
+To do that we need to first login into our account uning aws configure command and then run the following command:
+aws ec2 run-instances — image-id ami-0e306788ff2473ccb — instance-type t2.micro — count 1 — subnet-id subnet-50737a38 — security-group-ids sg-02d721fc7981c026f — key-name awsOS
+
+
+Our instance is ready!!!
+
+2. Our next step is to create an EBS volume and mount it to our previously created instance.
+ i. To create volume type the following command:
+aws ec2 create-volume — availability-zone ap-south-1a — size 1
+
+
+…and our volume is created.
+
+ ii. To attatch the volume to our instance we need to run the following command:
+aws ec2 attach-volume — device /dev/sdf — instance-id i0e6e3ce012427d100 — volume-id vol-0b77315a216840efd
+
+
+Now we’ve attatched the volume to our instance…
+
+3. We need to create a web server in our instance and to do so here are the steps to be followed.
+ i. First we need to connect to our instance and install the apache web server by using the ‘yum install httpd’ command.
+   So the apache web server is installed.
+ 
+ ii. No we need to enable it and disable the firewall(only if it is installed).
+     Run the following commands:
+     systemctl enable httpd
+     systemctl start httpd
+     setenforce 0
+
+Finally our web server is configured🤗
+4. Now we need to create a partition and format the disk.
+ i. To create partition run the fdisk command
+
+ fdisk followed by the volume name
+
+ press p for primary
+
+ press w to save changes
+
+ fdisk -l command to list the disks and partitions
+ So we have partitioned our volume now we need to format it.
+ 
+ ii. For formatting use the mkfs.ext4 command
+
+      mkfs.ext4 followed by the volume name
+
+5. Our next step is to create a bucket using s3 and store a static object in it.
+ i. To create bucket run the following command
+ aws s3api create-bucket — bucket mytask-2— region ap-south-1 — create-bucketconfiguration LocationConstraint=ap-south-1
+
+     mytask-2 is the unique bucket name
+
+
+We need to add object(image,file,etc) to the bucket using the webui
+The object should be made public and the object URL should be used for accessing it.
+
+6. Now we need to setup the CDN using Cloudfront and the previously created bucket as its Origin. Run the following command:
+aws cloudfront create-distribution — origin-domain-name mytask-2.s3.amazonaws.com
+
+
+
+copy the domain name of the distribution
+6. We are now in the final step. Here we need to add the domain name of our cloudfront distribution to the server we created earlier. Run the following commands in the instance ssh client:
+cd /var/www/html
+vim task.html
+
+add the previously copied domain name here and save the file
+Use the Public URL of the Instance followed by the file name that we just created in the previous step and see the magic!!!
+
+And finally the task is complete
